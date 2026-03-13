@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Intel Pro</title>
+    <link type="image/png" sizes="96x96" rel="icon" href="icon.png"> <link type="image/png" sizes="32x32" rel="icon"> 
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="src/style.css">
+    <style>
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="dashboard-header">
+            <h1>Panel Financiero</h1>
+            <p style="color: var(--text-muted)">Análisis de deuda y capacidad de ahorro</p>
+        </header>
+
+        <div class="resumen-card">
+            <div class="stat-item">
+                <span>Crédito Total Usado</span>
+                <div id="total-deuda-header">$0.00</div>
+            </div>
+            
+            <div class="progress-stack" id="bar-general"></div>
+            
+            <div class="resumen-grid">
+                <div class="stat-item">
+                    <span>Ahorro necesario</span>
+                    <div id="total-ahorro" style="font-size: 1.2rem; color: var(--color-ahorro)">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <span>Apalancamiento</span>
+                    <div id="total-apalancado-grid" style="font-size: 1.2rem; color: var(--color-apalancado)">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <span>Meses Sin Intereses</span>
+                    <div id="total-msi-grid" style="font-size: 1.2rem; color: var(--color-msi)">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <span>Crédito Disponible</span>
+                    <div id="total-disponible" style="font-size: 1.2rem; color: var(--color-disponible)">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <span>Utilización</span>
+                    <div id="total-utilizacion" style="font-size: 1.2rem;">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-tarjetas" id="tarjetas-container"></div>
+    </div>
+
+    <script src="src/script.js"></script>
+</body>
+</html>
