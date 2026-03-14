@@ -32,15 +32,33 @@ class TarjetaLogic:
         uso_porcentaje = round((deuda_total / self.credito * 100), 1) if self.credito > 0 else 0
         
         # Lógica de Semanas y Ahorro
-        hoy = datetime.now()
-        f = self.fecha_pago + timedelta(days=1)
-        d = f.isoweekday() 
-        inicio = self.fecha_pago - timedelta(days=(d + 50))
-        diff_days = (hoy - inicio).days
-        semanas = min(7, max(1, math.floor(diff_days / 7) + 1))
+# NUEVO CÓDIGO CON CORTES EN VIERNES:
         
+        # 1. Normalizar "hoy" para quitarle horas y evitar desfases matemáticos
+        hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # 2. Encontrar el último viernes antes de (o en) la fecha de pago.
+        # En Python weekday(): Lunes=0 ... Jueves=3, Viernes=4, Sábado=5, Domingo=6
+        dias_al_viernes = (self.fecha_pago.weekday() - 4) % 7
+        inicio_semana_7 = self.fecha_pago - timedelta(days=dias_al_viernes)
+        
+        # 3. Diferencia en días desde hoy hasta el inicio de la semana 7
+        dias_diff = (inicio_semana_7 - hoy).days
+        
+        # 4. Asignar la semana basada en bloques de 7 días exactos
+        if dias_diff <= 0:
+            # Si hoy ya es ese "último viernes" o una fecha posterior a él
+            semanas = 7
+        else:
+            # math.ceil redondea hacia arriba, agrupando bloques:
+            # 1 a 7 días antes = Semana 6
+            # 8 a 14 días antes = Semana 5... etc.
+            semanas = 7 - math.ceil(dias_diff / 7)
+            
+        # 5. Asegurar que nunca baje de la semana 1 ni suba de la 7
+        semanas = max(1, min(7, semanas))
         saldo_corriente = max(0.0, self.saldo - self.saldo_pagar)
-        msi_total = max(0.0, deuda_total - saldo_corriente)
+        msi_total = max(0.0, deuda_total - (self.saldo_pagar + saldo_corriente))
         t_sc = semanas if semanas >= 3 else 0        
         tener = (self.saldo_pagar * semanas / 7) + (saldo_corriente * t_sc / 7)
         tener = min(deuda_total, tener)
@@ -50,16 +68,16 @@ class TarjetaLogic:
         
         return {
             "nombre": self.nombre,
+            "color": self.color,
             "credito": self.credito,
-            "disponible": self.disponible,
+            "fechaPago": self.fecha_pago.strftime('%d/%m/%Y'),
+            "semanaActual": semanas,
+            "usoPorcentaje": uso_porcentaje,
+            "saldoPagar": self.saldo_pagar,
             "tener": round(tener, 2),
             "apalancamiento": round(apalancamiento_neto, 2),
             "msi": round(msi, 2),
-            "usoPorcentaje": uso_porcentaje,
-            "color": self.color,
-            "fechaPago": self.fecha_pago.strftime('%d/%m/%Y'),
-            "saldoPagar": self.saldo_pagar,
-            "semanaActual": semanas
+            "disponible": self.disponible,
         }
 
 @app.route('/api/tarjetas')
