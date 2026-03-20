@@ -76,11 +76,11 @@ class TarjetaLogic:
             "credito": self.credito,
             "fechaPago": self.fecha_pago.strftime('%d/%m/%Y'),
             "semanaActual": semanas,
-            "semanaSaldoCorriente": t_sc, # <-- Aquí mandamos la semana del saldo corriente a la API
+            "semanaSaldoCorriente": t_sc,
             "usoPorcentaje": uso_porcentaje,
             "saldoPagar": self.saldo_pagar,
-            "ahorroSaldoCorriente": round(ahorro_saldo_corriente, 2), # <-- Aquí mandamos el ahorro desglosado
-            "tener": round(tener, 2), # Este es el total (Ahorro pago + Ahorro corriente)
+            "ahorroSaldoCorriente": round(ahorro_saldo_corriente, 2),
+            "tener": round(tener, 2),
             "apalancamiento": round(apalancamiento_neto, 2),
             "msi": round(msi, 2),
             "disponible": self.disponible,
@@ -106,32 +106,64 @@ def get_tarjetas():
                 t = TarjetaLogic(*fila)
                 resultado.append(t.calcular())
 
+        # Ordenar las tarjetas por la semana actual
         resultado.sort(key=lambda x: x['semanaActual'], reverse=True)
 
-        # 4. Actualizar caché local con datos frescos
-        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(resultado, f, ensure_ascii=False, indent=4)
+        # 4. Calcular totales en el backend
+        t_credito = sum(t['credito'] for t in resultado)
+        t_disponible = sum(t['disponible'] for t in resultado)
+        t_ahorro = sum(t['tener'] for t in resultado)
+        t_apalancado = sum(t['apalancamiento'] for t in resultado)
+        t_msi = sum(t['msi'] for t in resultado)
+        
+        t_usado = t_credito - t_disponible
+        utilizacion = (t_usado / t_credito * 100) if t_credito > 0 else 0
 
-        return jsonify(resultado)
+        # 5. Estructurar la respuesta final (Cliente Ligero)
+        respuesta_json = {
+            "totales": {
+                "totalCredito": t_credito,
+                "totalDisponible": t_disponible,
+                "totalAhorro": t_ahorro,
+                "totalApalancado": t_apalancado,
+                "totalMsi": t_msi,
+                "totalUsado": t_usado,
+                "utilizacionGlobal": utilizacion,
+                "pctAhorro": (t_ahorro / t_credito * 100) if t_credito > 0 else 0,
+                "pctApalancado": (t_apalancado / t_credito * 100) if t_credito > 0 else 0,
+                "pctMsi": (t_msi / t_credito * 100) if t_credito > 0 else 0,
+                "pctDisponible": (t_disponible / t_credito * 100) if t_credito > 0 else 0
+            },
+            "tarjetas": resultado
+        }
+
+        # 6. Actualizar caché local con la nueva estructura
+        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(respuesta_json, f, ensure_ascii=False, indent=4)
+
+        return jsonify(respuesta_json)
 
     except Exception as e:
         print(f"Error de red/datos: {e}. Intentando cargar desde caché...")
         if os.path.exists(CACHE_FILE):
             try:
+                # Si hay error de red, devolvemos la última versión guardada en caché
                 with open(CACHE_FILE, 'r', encoding='utf-8') as f:
                     cache_data = json.load(f)
                 return jsonify(cache_data)
             except Exception as e_cache:
-                return jsonify({"error": f"Error crítico: {str(e_cache)}"}), 500
+                return jsonify({"error": f"Error crítico al leer caché: {str(e_cache)}"}), 500
 
         return jsonify({"error": "No hay conexión ni caché disponible"}), 500
 
 # Rutas para archivos estáticos
 @app.route('/')
-def index(): return send_from_directory(PATH, 'index.html')
+def index(): 
+    return send_from_directory(PATH, 'index.html')
 
 @app.route('/<path:path>')
-def static_files(path): return send_from_directory(PATH, path)
+def static_files(path): 
+    return send_from_directory(PATH, path)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
