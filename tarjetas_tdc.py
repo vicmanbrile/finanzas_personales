@@ -58,7 +58,7 @@ class TarjetaLogic:
 
         # Corriente
         saldo_corriente = max(0.0, self.saldo - self.saldo_pagar)
-        datos["semanaCorriente"] = semanas - 4 if semanas > 4 else 0
+        datos["semanaCorriente"] = semanas - 4 if semanas > 4 else 1
         datos["tenerCorriente"] = round(saldo_corriente * datos["semanaCorriente"] / 7,2)
         # Total
         deuda_total = max(0.0, self.credito - self.disponible)

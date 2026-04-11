@@ -17,7 +17,6 @@ async function cargarDatos() {
             </p>`;
     }
 }
-
 function renderDashboard(tarjetas) {
     let totalCredito = 0;
     let totalDisponible = 0;
@@ -82,20 +81,30 @@ function renderDashboard(tarjetas) {
         card.style.flexDirection = 'column';
         card.style.gap = '15px';
 
-        // Porcentajes de Saldos
+        // Valores Generales
         const msiVal = t.msi || 0;
-        const pctTener = t.credito > 0 ? (t.tener / t.credito) * 100 : 0;
         const pctApalancamiento = t.credito > 0 ? (t.apalancamiento / t.credito) * 100 : 0;
         const pctMsi = t.credito > 0 ? (msiVal / t.credito) * 100 : 0;
         const pctDisponible = t.credito > 0 ? (t.disponible / t.credito) * 100 : 0;
 
-        // Porcentajes de Semanas (dividido siempre entre 7)
-        const pctSemanaCorriente = Math.min((t.semanaCorriente / 7) * 100, 100);
-        const pctSemanaAPago = Math.min((t.semanaAPago / 7) * 100, 100);
+        // Valores de ahorro requeridos separados
+        const tenerCorriente = Number(t.tenerCorriente) || 0;
+        const tenerAPago = Number(t.tenerAPago) || 0;
+        const totalAhorroEnSemana = tenerCorriente + tenerAPago;
 
-        // Valores de ahorro requeridos
-        const tenerCorriente = t.tenerCorriente || 0;
-        const tenerAPago = t.tenerAPago || 0;
+        // Porcentajes para la barra de Distribución (divididos sobre el total del Crédito)
+        const pctTenerAPagoCredito = t.credito > 0 ? (tenerAPago / t.credito) * 100 : 0;
+        const pctTenerCorrienteCredito = t.credito > 0 ? (tenerCorriente / t.credito) * 100 : 0;
+
+        // Texto dinámico inteligente
+        let textoProgreso = '';
+        if (tenerAPago > 0 && tenerCorriente > 0) {
+            textoProgreso = `Semana Pago <span style="color: #f59e0b;">(${formatCurrency(tenerAPago)})</span> 4 / 4 </br> <span style="margin: 0 4px; color: #cbd5e1;"> </br> </span> Corriente <span style="color: #3b82f6;">(${formatCurrency(tenerCorriente)})</span> ${t.semanaCorriente} / 3`;
+        } else if (tenerAPago > 0) {
+            textoProgreso = `Semana Pago <span style="color: #f59e0b;">(${formatCurrency(tenerAPago)})</span> ${Math.min(t.semanaAPago, 4)} / 4`;
+        } else if (tenerCorriente > 0) {
+            textoProgreso = `</br> Corriente <span style="color: #3b82f6;">(${formatCurrency(tenerCorriente)})</span> ${t.semanaCorriente} / 3`;
+        }
 
         card.innerHTML = `
             <div>
@@ -110,46 +119,32 @@ function renderDashboard(tarjetas) {
                 </div>
             </div>
             
-            <div class="tarjeta-meta" style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #666;">
+            <div class="tarjeta-meta" style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #666; margin-bottom: 5px;">
                 <span>Fecha a Pago: <strong>${t.fechaAPago}</strong></span>
                 <span style="color: var(--color-ahorro);">Saldo a Pago: <strong>${formatCurrency(t.saldoAPago)}</strong></span>
             </div>
 
-            <div style="background: #f8fafc; padding: 12px; border-radius: 8px;">
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748b; margin-bottom: 4px; font-weight: 600;">
-                        <span>Semana Corriente <span style="color: var(--color-ahorro); margin-left: 4px;">(${formatCurrency(tenerCorriente)})</span></span>
-                        <span>${t.semanaCorriente} / 7</span>
-                    </div>
-                    <div style="display: flex; height: 6px; width: 100%; border-radius: 3px; overflow: hidden; background-color: #e2e8f0;">
-                        <div style="width: ${pctSemanaCorriente}%; background-color: #3b82f6; transition: width 0.5s;"></div>
-                    </div>
-                </div>
-
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748b; margin-bottom: 4px; font-weight: 600;">
-                        <span>Semana a Pago <span style="color: var(--color-ahorro); margin-left: 4px;">(${formatCurrency(tenerAPago)})</span></span>
-                        <span>${t.semanaAPago} / 7</span>
-                    </div>
-                    <div style="display: flex; height: 6px; width: 100%; border-radius: 3px; overflow: hidden; background-color: #e2e8f0;">
-                        <div style="width: ${pctSemanaAPago}%; background-color: #f59e0b; transition: width 0.5s;"></div>
-                    </div>
-                </div>
-            </div>
-
             <div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">
-                    <span>Distribución de Crédito</span>
+                <div style="margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-align: left;">
+                        Distribución de Crédito
+                    </span>
+                    
+                    <span style="display: ${totalAhorroEnSemana > 0 ? 'block' : 'none'}; font-size: 0.75rem; font-weight: 600; text-align: left; color: #64748b;">
+                        ${textoProgreso}
+                    </span>
                 </div>
                 <div style="display: flex; height: 8px; width: 100%; border-radius: 4px; overflow: hidden; background-color: #e2e8f0;">
-                    <div style="width: ${pctTener}%; background-color: var(--color-ahorro);" title="Ahorro: ${formatCurrency(t.tener)}"></div>
+                    <div style="width: ${pctTenerAPagoCredito}%; background-color: #f59e0b; transition: width 0.5s;" title="Semana a Pago: ${formatCurrency(tenerAPago)}"></div>
+                    <div style="width: ${pctTenerCorrienteCredito}%; background-color: #3b82f6; transition: width 0.5s;" title="Corriente: ${formatCurrency(tenerCorriente)}"></div>
+                    
                     <div style="width: ${pctApalancamiento}%; background-color: var(--color-apalancado);" title="Apalancado: ${formatCurrency(t.apalancamiento)}"></div>
                     <div style="width: ${pctMsi}%; background-color: var(--color-msi, #8b5cf6);" title="MSI: ${formatCurrency(msiVal)}"></div>
                     <div style="width: ${pctDisponible}%; background-color: var(--color-disponible);" title="Disponible: ${formatCurrency(t.disponible)}"></div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem; padding-top: 5px; border-top: 1px dashed #e2e8f0;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
                 <div style="display: flex; flex-direction: column;">
                     <span style="color: #666; font-size: 0.75rem;">Ahorro (Tener)</span>
                     <span style="font-weight: bold; color: var(--color-ahorro);">${formatCurrency(t.tener)}</span>
