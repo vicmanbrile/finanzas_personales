@@ -4,7 +4,6 @@ import csv
 import io
 import os
 import json
-
 import tarjetas_tdc
 
 app = Flask(__name__)
@@ -13,30 +12,33 @@ PATH = BASE_DIR
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdAW8zU6-897ZCb-1r4--VCALsGkuzo5psM4pimZhuaAqApY0gyKEvH6GtUgL0N5YwnqCfeTtpibj/pub?gid=0&single=true&output=csv"
 CACHE_FILE = "cache_data.json"
 
-
 @app.route('/api/tarjetas')
 def get_tarjetas():
     try:
-        # 1. Intentar descargar datos de Google Sheets (con timeout de 5s)
         respuesta = requests.get(SHEET_URL, timeout=5)
         respuesta.raise_for_status()
         respuesta.encoding = 'utf-8'
         
-        # 2. Parsear CSV
         contenido = io.StringIO(respuesta.text)
         lector = csv.reader(contenido)
-        next(lector) # Saltar encabezado
+        next(lector)
         
-        # 3. Procesar cada fila
         resultado = []
         for fila in lector:
             if len(fila) >= 6:
                 t = tarjetas_tdc.TarjetaLogic(*fila)
                 resultado.append(t.calcular())
 
-        resultado.sort(key=lambda x: x['semanaAPago'], reverse=True)
+        def clasificar(tarjeta):
+            if tarjeta['semanaCorriente'] > 0:
+                return 3
+            elif tarjeta['semanaAPago'] == 1:
+                return 2
+            else:
+                return -tarjeta['semanaAPago']
+
+        resultado.sort(key=clasificar)
        
-        # 4. Actualizar caché local con datos frescos
         with open(CACHE_FILE, 'w', encoding='utf-8') as f:
             json.dump(resultado, f, ensure_ascii=False, indent=4)
         
@@ -54,12 +56,13 @@ def get_tarjetas():
         
         return jsonify({"error": "No hay conexión ni caché disponible"}), 500
 
-# Rutas para archivos estáticos
 @app.route('/')
-def index(): return send_from_directory(PATH, 'index.html')
+def index(): 
+    return send_from_directory(PATH, 'index.html')
 
 @app.route('/<path:path>')
-def static_files(path): return send_from_directory(PATH, path)
+def static_files(path): 
+    return send_from_directory(PATH, path)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
