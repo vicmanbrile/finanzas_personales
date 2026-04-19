@@ -5,6 +5,5 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
       - ./cache_data.json:/app/cache_data.json
     restart: no
