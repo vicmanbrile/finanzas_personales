@@ -1,5 +1,5 @@
 # Etapa de compilación
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go build -o main .
@@ -8,9 +8,7 @@ RUN go build -o main .
 FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/main .
-COPY index.html .
-COPY icon.png .
-COPY src/ ./src/
+COPY static/ ./static/
 
 # Crear archivo de caché vacío
 RUN touch cache_data.json && chmod 666 cache_data.json
