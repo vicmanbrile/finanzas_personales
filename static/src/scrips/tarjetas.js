@@ -25,7 +25,8 @@ function renderTarjetas(tarjetas) {
     const contenedor = document.getElementById('tarjetas-container');
     contenedor.innerHTML = '';
 
-    const card = document.createElement('div');
+    tarjetas.forEach(t => {
+        const card = document.createElement('div');
         card.className = 'tarjeta-card';
         // Mantenemos el color del borde superior dinámico
         card.style.borderTop = `4px solid ${t.color}`;
@@ -97,5 +98,6 @@ function renderTarjetas(tarjetas) {
                 </div>
             </div>
         `;
-    contenedor.appendChild(card);
+        contenedor.appendChild(card);
+    });
 }
