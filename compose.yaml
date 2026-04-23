@@ -4,6 +4,16 @@ services:
     image: devic-tarjetas-go:local
     ports:
       - "8000:8000"
-    volumes:
-      - ./cache_data.json:/app/cache_data.json
+    environment:
+    - MONGO_URI=mongodb://mongodb:27017
+    depends_on:
+      - mongodb
     restart: no
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+volumes:
+  mongo-data:
